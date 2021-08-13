@@ -29,9 +29,16 @@ import { useState } from 'react';
 import { queryClient } from '../../services/queryClient';
 import { api } from '../../services/api';
 
+import { User } from '../../services/hooks/useUsers';
+
 export default function UserList() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, error, isFetching } = useUsers(page);
+  const { data, isLoading, error, isFetching } = useUsers(
+    page
+    //   {
+    //   initialData: initalUsers,
+    // }
+  );
 
   const isWideVersion = useBreakpointValue({
     base: false,
@@ -159,3 +166,11 @@ export default function UserList() {
     </Box>
   );
 }
+
+// export const getServerSideProps: GetServerSideProps = async () => {
+//   const { users } = await getUsers(1);
+
+//   return {
+//     props: { initalUsers: users },
+//   };
+// };

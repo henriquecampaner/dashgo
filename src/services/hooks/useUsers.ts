@@ -1,7 +1,11 @@
-import { useQuery } from 'react-query';
+import {
+  useQuery,
+  UseQueryOptions,
+  UseQueryResult,
+} from 'react-query';
 import { api } from '../api';
 
-type User = {
+export type User = {
   id: string;
   name: string;
   email: string;
@@ -35,16 +39,15 @@ export async function getUsers(
     }),
   }));
 
-  console.log(users);
-
   return {
     users,
     totalCount,
   };
 }
 
-export function useUsers(page: number) {
+export function useUsers(page: number, options?: UseQueryOptions) {
   return useQuery(['users', page], () => getUsers(page), {
     staleTime: 1000 * 5, // 5 seconds
-  });
+    ...options,
+  }) as UseQueryResult<GetUserResponse, unknown>;
 }

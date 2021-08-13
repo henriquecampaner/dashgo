@@ -5,7 +5,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  createdAt: string;
+  created_at: string;
 };
 
 type GetUserResponse = {
@@ -16,7 +16,7 @@ type GetUserResponse = {
 export async function getUsers(
   page: number
 ): Promise<GetUserResponse> {
-  const { data, headers } = await api.get('api/users', {
+  const { data, headers } = await api.get('users', {
     params: {
       page: page,
     },
@@ -28,12 +28,14 @@ export async function getUsers(
     id: user.id,
     name: user.name,
     email: user.email,
-    createdAt: new Date(user.createdAt).toLocaleDateString('en-gb', {
+    createdAt: new Date(user.created_at).toLocaleDateString('en-gb', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
     }),
   }));
+
+  console.log(users);
 
   return {
     users,

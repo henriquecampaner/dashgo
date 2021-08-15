@@ -8,7 +8,7 @@ import {
 
 import { setCookie, parseCookies, destroyCookie } from 'nookies';
 
-import { authApi } from '../services/api';
+import { authApi } from '../services/apiClient';
 import Router from 'next/router';
 import { AxiosError } from 'axios';
 type User = {

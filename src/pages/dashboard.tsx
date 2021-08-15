@@ -4,6 +4,11 @@ import { Box, Flex, SimpleGrid, Text, theme } from '@chakra-ui/react';
 import { Header } from '../components/Header';
 import { Sidebar } from '../components/Sidebar';
 import { ApexOptions } from 'apexcharts';
+import { withSSRAuth } from '../utils/withSSRAuth';
+import { authApi } from '../services/apiClient';
+import { setupApiClient } from '../services/api';
+import { AuthTokenError } from '../services/errors/AuthTokenError';
+import { destroyCookie } from 'nookies';
 
 const Chart = dynamic(() => import('react-apexcharts'), {
   ssr: false,
@@ -93,3 +98,15 @@ export default function Dashboard() {
     </Flex>
   );
 }
+
+export const getServerSideProps = withSSRAuth(async (ctx) => {
+  const apiClient = setupApiClient(ctx);
+
+  const response = await apiClient.get('me');
+
+  console.log(response.data);
+
+  return {
+    props: {},
+  };
+});

@@ -1,8 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { parseCookies, setCookie } from 'nookies';
 import { signOut } from '../contexts/AuthContext';
+import { AuthTokenError } from './errors/AuthTokenError';
 
-let cookies = parseCookies();
 let isRefreshing = false;
 let failedRequestQueue = [];
 
@@ -10,96 +10,112 @@ export const api = axios.create({
   baseURL: 'http://localhost:3000/api',
 });
 
-export const authApi = axios.create({
-  baseURL: 'http://localhost:3333',
-  headers: {
-    Authorization: `Bearer ${cookies['dashgo.token']}`,
-  },
-});
+export function setupApiClient(ctx = undefined) {
+  let cookies = parseCookies(ctx);
 
-// Intercept all requests
-authApi.interceptors.response.use(
-  // If response ok, just keep going
-  (response) => {
-    return response;
-  },
-  // On error:
-  (error: AxiosError) => {
-    if (error.response.status === 401) {
-      if (error.response.data?.code === 'token.expired') {
-        // Get the latest cookies
-        cookies = parseCookies();
+  const authApi = axios.create({
+    baseURL: 'http://localhost:3333',
+    headers: {
+      Authorization: `Bearer ${cookies['dashgo.token']}`,
+    },
+  });
 
-        const { 'dashgo.refreshToken': refreshToken } = cookies;
+  // Intercept all requests
+  authApi.interceptors.response.use(
+    // If response ok, just keep going
+    (response) => {
+      return response;
+    },
+    // On error:
+    (error: AxiosError) => {
+      if (error.response.status === 401) {
+        if (error.response.data?.code === 'token.expired') {
+          // Get the latest cookies
+          cookies = parseCookies(ctx);
 
-        // get all the requests with error and their configs (routes, params, etc)
-        const originalConfig = error.config;
+          const { 'dashgo.refreshToken': refreshToken } = cookies;
 
-        // This will prevent rerequests
-        if (!isRefreshing) {
-          isRefreshing = true;
+          // get all the requests with error and their configs (routes, params, etc)
+          const originalConfig = error.config;
 
-          authApi
-            .post('/refresh', {
-              refreshToken,
-            })
-            .then((res) => {
-              const { token } = res.data;
+          // This will prevent rerequests
+          if (!isRefreshing) {
+            isRefreshing = true;
 
-              setCookie(undefined, 'dashgo.token', token, {
-                maxAge: 60 * 60 * 30, // 30 days
-                path: '/', //all addresses (global)
-              });
+            authApi
+              .post('/refresh', {
+                refreshToken,
+              })
+              .then((res) => {
+                const { token } = res.data;
 
-              setCookie(
-                undefined,
-                'dashgo.refreshToken',
-                res.data.refreshToken,
-                {
+                setCookie(ctx, 'dashgo.token', token, {
                   maxAge: 60 * 60 * 30, // 30 days
                   path: '/', //all addresses (global)
+                });
+
+                setCookie(
+                  ctx,
+                  'dashgo.refreshToken',
+                  res.data.refreshToken,
+                  {
+                    maxAge: 60 * 60 * 30, // 30 days
+                    path: '/', //all addresses (global)
+                  }
+                );
+
+                authApi.defaults.headers[
+                  'Authorization'
+                ] = `Bearer ${token}`;
+
+                // Request all the failures request with the new token
+                failedRequestQueue.forEach((request) =>
+                  request.onSuccess(token)
+                );
+                failedRequestQueue = [];
+              })
+              .catch((err) => {
+                failedRequestQueue.forEach((request) =>
+                  request.onFailure(err)
+                );
+                failedRequestQueue = [];
+
+                if (process.browser) {
+                  signOut();
+                } else {
+                  ``;
                 }
-              );
+              })
+              .finally(() => {
+                isRefreshing = false;
+              });
+          }
+          return new Promise((resolve, reject) => {
+            failedRequestQueue.push({
+              onSuccess: (token: string) => {
+                originalConfig.headers[
+                  'Authorization'
+                ] = `Bearer ${token}`;
+                // Rerequest with new token
 
-              authApi.defaults.headers[
-                'Authorization'
-              ] = `Bearer ${token}`;
-
-              // Request all the failures request with the new token
-              failedRequestQueue.forEach((request) =>
-                request.onSuccess(token)
-              );
-              failedRequestQueue = [];
-            })
-            .catch((err) => {
-              failedRequestQueue.forEach((request) =>
-                request.onFailure(err)
-              );
-              failedRequestQueue = [];
-            })
-            .finally(() => {
-              isRefreshing = false;
+                resolve(authApi(originalConfig));
+              },
+              onFailure: (err: AxiosError) => {
+                reject(err);
+              },
             });
-        }
-        return new Promise((resolve, reject) => {
-          failedRequestQueue.push({
-            onSuccess: (token: string) => {
-              originalConfig.headers[
-                'Authorization'
-              ] = `Bearer ${token}`;
-              // Rerequest with new token
-
-              resolve(authApi(originalConfig));
-            },
-            onFailure: (err: AxiosError) => {
-              reject(err);
-            },
           });
-        });
+        } else {
+          if (process.browser) {
+            signOut();
+          } else {
+            return Promise.reject(new AuthTokenError());
+          }
+        }
       }
-    } else {
-      signOut();
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
+
+  return authApi;
+}

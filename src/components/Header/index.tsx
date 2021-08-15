@@ -10,8 +10,10 @@ import { SearchBox } from './SearchBox';
 import { Logo } from './Logo';
 import { useSidebarDrawer } from '../../contexts/SidebarDrawerContext';
 import { RiMenuLine } from 'react-icons/ri';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
+  const { user } = useAuth();
   const { onOpen } = useSidebarDrawer();
 
   const isWideVersion = useBreakpointValue({
@@ -49,7 +51,11 @@ export function Header() {
       <Flex align="center" ml="auto">
         <NotificationsNav />
 
-        <Profile showProfileData={isWideVersion} />
+        <Profile
+          name={user.name}
+          email={user.email}
+          showProfileData={isWideVersion}
+        />
       </Flex>
     </Flex>
   );

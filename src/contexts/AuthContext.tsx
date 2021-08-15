@@ -1,8 +1,16 @@
-import { useContext } from 'react';
-import { useState } from 'react';
-import { createContext, ReactNode } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useState,
+  useContext,
+  useEffect,
+} from 'react';
+
+import { setCookie, parseCookies, destroyCookie } from 'nookies';
+
 import { authApi } from '../services/api';
-import { useRouter } from 'next/router';
+import Router from 'next/router';
+import { AxiosError } from 'axios';
 type User = {
   email: string;
   permissions: string[];
@@ -27,11 +35,33 @@ interface AuthProviderProps {
 
 const AuthContext = createContext({} as AuthContextData);
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const { push } = useRouter();
+export function signOut() {
+  destroyCookie(undefined, 'dashgo.token');
+  destroyCookie(undefined, 'dashgo.refreshToken');
 
+  Router.push('/');
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User>();
   const isAuthenticated = !!user;
+
+  useEffect(() => {
+    const { 'dashgo.token': token } = parseCookies();
+
+    if (token) {
+      authApi
+        .get('/me')
+        .then((res) => {
+          const { email, roles, permissions, name } = res.data;
+
+          setUser({ email, permissions, roles, name });
+        })
+        .catch((er: AxiosError) => {
+          signOut();
+        });
+    }
+  }, []);
 
   async function signIn({ email, password }: SignInCredentials) {
     try {
@@ -50,9 +80,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         name,
       });
 
-      console.log(response.data);
+      setCookie(undefined, 'dashgo.token', token, {
+        maxAge: 60 * 60 * 30, // 30 days
+        path: '/', //all addresses (global)
+      });
+      setCookie(undefined, 'dashgo.refreshToken', refreshToken, {
+        maxAge: 60 * 60 * 30, // 30 days
+        path: '/', //all addresses (global)
+      });
 
-      push('/users');
+      authApi.defaults.headers['Authorization'] = `Bearer ${token}`;
+
+      Router.push('/dashboard');
     } catch (error) {
       console.log(error);
     }
@@ -69,4 +108,7 @@ export function useAuth(): AuthContextData {
   const context = useContext(AuthContext);
 
   return context;
+}
+function push(arg0: string) {
+  throw new Error('Function not implemented.');
 }

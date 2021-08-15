@@ -15,15 +15,15 @@ if (process.env.NODE_ENV === 'development') {
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ChakraProvider theme={theme}>
+      <ChakraProvider theme={theme}>
+        <AuthProvider>
           <SidebarDrawerProvider>
             <Component {...pageProps} />
           </SidebarDrawerProvider>
-        </ChakraProvider>
 
-        <ReactQueryDevtools />
-      </AuthProvider>
+          <ReactQueryDevtools />
+        </AuthProvider>
+      </ChakraProvider>
     </QueryClientProvider>
   );
 }

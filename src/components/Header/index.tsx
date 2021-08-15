@@ -52,8 +52,8 @@ export function Header() {
         <NotificationsNav />
 
         <Profile
-          name={user.name}
-          email={user.email}
+          name={user?.name}
+          email={user?.email}
           showProfileData={isWideVersion}
         />
       </Flex>

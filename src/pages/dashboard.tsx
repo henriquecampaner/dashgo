@@ -5,10 +5,8 @@ import { Header } from '../components/Header';
 import { Sidebar } from '../components/Sidebar';
 import { ApexOptions } from 'apexcharts';
 import { withSSRAuth } from '../utils/withSSRAuth';
-import { authApi } from '../services/apiClient';
 import { setupApiClient } from '../services/api';
-import { AuthTokenError } from '../services/errors/AuthTokenError';
-import { destroyCookie } from 'nookies';
+import { Can } from '../components/Can';
 
 const Chart = dynamic(() => import('react-apexcharts'), {
   ssr: false,
@@ -64,36 +62,38 @@ export default function Dashboard() {
       <Flex as="main" w="100%" my="6" maxW={1480} mx="auto" px="6">
         <Sidebar />
 
-        <SimpleGrid
-          flex="1"
-          gap="4"
-          minChildWidth="320px"
-          align="flex-start"
-        >
-          <Box p={['6', '8']} bg="gray.800" borderRadius="8" pb="4">
-            <Text fontSize="lg" mb="4">
-              Subscribers of the week
-            </Text>
-            <Chart
-              type="area"
-              height={160}
-              options={options}
-              series={series}
-            />
-          </Box>
-
-          <Box p={['6', '8']} bg="gray.800" borderRadius="8" pb="4">
-            <Text fontSize="lg" mb="4">
-              Opening frequency
+        <Can permissions={['metrics.list']}>
+          <SimpleGrid
+            flex="1"
+            gap="4"
+            minChildWidth="320px"
+            align="flex-start"
+          >
+            <Box p={['6', '8']} bg="gray.800" borderRadius="8" pb="4">
+              <Text fontSize="lg" mb="4">
+                Subscribers of the week
+              </Text>
               <Chart
                 type="area"
                 height={160}
                 options={options}
                 series={series}
               />
-            </Text>
-          </Box>
-        </SimpleGrid>
+            </Box>
+
+            <Box p={['6', '8']} bg="gray.800" borderRadius="8" pb="4">
+              <Text fontSize="lg" mb="4">
+                Opening frequency
+                <Chart
+                  type="area"
+                  height={160}
+                  options={options}
+                  series={series}
+                />
+              </Text>
+            </Box>
+          </SimpleGrid>
+        </Can>
       </Flex>
     </Flex>
   );

@@ -1,4 +1,5 @@
-import { Flex, Box, Text, Avatar } from '@chakra-ui/react';
+import { Flex, Box, Text, Avatar, Button } from '@chakra-ui/react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ProfileProps {
   showProfileData?: boolean;
@@ -11,6 +12,7 @@ export function Profile({
   name,
   email,
 }: ProfileProps) {
+  const { signOut } = useAuth();
   return (
     <Flex align="center">
       {showProfileData && (
@@ -22,11 +24,22 @@ export function Profile({
         </Box>
       )}
 
-      <Avatar
-        size="md"
-        name="Henrique Campaner"
-        src="https://github.com/henriquecampaner.png"
-      />
+      <Flex direction={['column', 'row']} alignItems="center">
+        <Avatar
+          size="md"
+          name="Henrique Campaner"
+          src="https://github.com/henriquecampaner.png"
+        />
+
+        <Button
+          ml={['0', '8']}
+          mt={['2', undefined]}
+          colorScheme="red"
+          onClick={signOut}
+        >
+          Sign out
+        </Button>
+      </Flex>
     </Flex>
   );
 }
